@@ -1,12 +1,20 @@
+from cgitb import handler
+
 import numpy
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from scipy.interpolate import UnivariateSpline
+import matplotlib.patches as mpatches
+
+from statsmodels.tsa.ar_model import AutoReg
 
 
-originialData = pd.read_csv('GasPrice.csv', index_col=['Halbjahr'], parse_dates=['Halbjahr'], sep=r'\s*;\s*')
+originalData = pd.read_csv('GasPrice.csv',
+                            index_col=['Halbjahr'],
+                            parse_dates=['Halbjahr'],
+                            sep=r'\s*;\s*')
 # print(originialData)
 
 
@@ -53,28 +61,33 @@ originialData = pd.read_csv('GasPrice.csv', index_col=['Halbjahr'], parse_dates=
 # print(data["Netzentgelt,  ct/KWh"])
 
 
-cleanedData = originialData
+cleanedData = originalData
+
 
 s = pd.Series(cleanedData["Netzentgelt,  ct/KWh"])
 t = pd.Series(cleanedData["Vertrieb und Marge, ct/KWh"])
 u = pd.Series(cleanedData["Endverbraucherpreis,  ct/KWh"])
+
 cleanedData["Netzentgelt,  ct/KWh"] = s.interpolate()
-cleanedData["Vertrieb und Marge, ct/KWh"] = t.interpolate()
+cleanedData["Vertrieb und Marge, ct/KWh"] = t.interpolate(method='cubic', order=3)
 cleanedData["Endverbraucherpreis,  ct/KWh"] = u.interpolate()
-# print(cleanedData)
+print("cleanedData")
+print(cleanedData)
+
 #
 
-predictionData = originialData[["Energiebeschaffung, ct/KWh", "Endverbraucherpreis,  ct/KWh"]]
-predictionData.index = predictionData['Halbjahr']
-print(predictionData)
+predictionData = cleanedData[["Energiebeschaffung, ct/KWh", "Endverbraucherpreis,  ct/KWh"]]
+# print(predictionData)
 
 
 
-
-# print(data)
-#
-# plt.figure(figsize=(15, 7))
-# plt.plot(data['Endverbraucherpreis,  ct/KWh'])
-# plt.title('halbjährliche Daten')
-# plt.grid(True)
-# plt.show()
+plt.plot(cleanedData.index, cleanedData["Energiebeschaffung, ct/KWh"], label='Energiebeschaffung')
+plt.plot(cleanedData.index, cleanedData["Steuern und Abgaben, ct/KWh"], label='Steuern und Abgaben')
+plt.plot(cleanedData.index, cleanedData["Netzentgelt,  ct/KWh"], label='Netzentgelt')
+plt.plot(cleanedData.index, cleanedData["Vertrieb und Marge, ct/KWh"], label='Vertrieb und Marge')
+plt.plot(cleanedData.index, cleanedData["Endverbraucherpreis,  ct/KWh"], label='Endverbraucherpreis')
+plt.subplots_adjust(right=0.77)
+plt.title('Halbjährliche Daten zu Gaspreisen in Deutschland')
+plt.grid(True)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+plt.show()
