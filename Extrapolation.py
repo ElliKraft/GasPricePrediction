@@ -6,10 +6,14 @@ import pandas as pd
 
 
 def get_future_date(base_date):
-    future_date = base_date + timedelta(weeks=108)
+    future_date = base_date + timedelta(weeks=216)
     return future_date
 
-def extrapolate(cleanedData, y_data, degree):
+
+def extrapolate(cleanedData, y_data, degree, timedata):
+    data = [0, 1, 2, 3]
+    newVal = pd.DataFrame
+
     dates = cleanedData.index
 
     polynomial_coefficients = np.polyfit(mdates.date2num(dates), y_data, degree)
@@ -26,9 +30,25 @@ def extrapolate(cleanedData, y_data, degree):
     cx.plot(datetime_dates, f(x), '-g')
     cx.grid()
     # plt.show()
-    data = [f(18808), f(18991)]
+    # data = [f(18808), f(18991)]
+    # print('timedata')
+    # print(len(timedata))
+    # print(timedata[0])
+    for i in range(len(timedata)):
+        data[i] = f(timedata[i])
+
     df = pd.Series(data)
+    print('calculations')
+    print(df)
     return df
+
+def predict(df, cleanedData):
+    print(df)
+    for column in df:
+        print(column)
+        newVal = extrapolate(cleanedData, cleanedData[column], 3, [19173, 19356, 19538, 19721])
+        for i in range(4):
+            df[column][14 + i] = round(newVal[i], 2)
 
 
 def plot(df):
