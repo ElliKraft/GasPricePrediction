@@ -1,65 +1,42 @@
-from cgitb import handler
-
-import numpy
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
-import statsmodels.graphics.api as smg
-from scipy import interpolate
-from scipy.interpolate import UnivariateSpline
-import matplotlib.patches as mpatches
+from Extrapolation import extrapolate, plot
 
-originalData = pd.read_csv('GasPrice.csv',
+#read data collection
+df = pd.read_csv('GasPrice.csv',
                             index_col=['Halbjahr'],
                             parse_dates=['Halbjahr'],
                             sep=r'\s*;\s*')
 
-cleanedData = originalData
-cleanedData.drop(cleanedData.tail(4).index, inplace=False)
+print(df)
+#extrapolate missing values Netzentgelt
+cleanedData = df
+cleanedData = cleanedData.drop(cleanedData.tail(2).index, inplace=False)
+# print(cleanedData)
+plot(cleanedData)
 
-predictionData = originalData
-print(predictionData)
-# s = pd.Series(cleanedData["Netzentgelt,  ct/KWh"])
-t = pd.Series(predictionData["Vertrieb und Marge, ct/KWh"])
-w = pd.Series(predictionData["Energiebeschaffung, ct/KWh"])
+newVal = extrapolate(cleanedData, cleanedData["Netzentgelt,  ct/KWh"], 3)
+df["Netzentgelt,  ct/KWh"][12] = round(newVal[0], 2)
+df["Netzentgelt,  ct/KWh"][13] = round(newVal[1], 2)
 
-u = pd.Series(cleanedData["Endverbraucherpreis,  ct/KWh"])
-#
-# cleanedData["Netzentgelt,  ct/KWh"] = s.interpolate()
-predictionData["Vertrieb und Marge, ct/KWh"] = t.interpolate()
-predictionData["Energiebeschaffung, ct/KWh"] = w.interpolate()
-predictionData["Endverbraucherpreis,  ct/KWh"] = u.interpolate()
-print("predictionData")
-print(predictionData)
+print(df["Netzentgelt,  ct/KWh"])
 
 
-X = cleanedData[["Energiebeschaffung, ct/KWh", "Vertrieb und Marge, ct/KWh"]]
-# X = cleanedData["Energiebeschaffung, ct/KWh"]
-# print(X)
-y = cleanedData["Endverbraucherpreis,  ct/KWh"]
-Z = predictionData[["Energiebeschaffung, ct/KWh", "Vertrieb und Marge, ct/KWh"]]
-# fit a OLS model with intercept on Energiebeschaffung and Marge und Vertrieb
-X = sm.add_constant(X)
-Z = sm.add_constant(Z)
-model = sm.OLS(y, X).fit()
-prediction = model.predict(Z)
-model.summary()
-print(model.summary())
-print(prediction)
+#extrapolate missing values Vertrieb und Marge
+cleanedData = df
+cleanedData = cleanedData.drop(cleanedData.tail(1).index, inplace=False)
+# print(cleanedData)
 
-# corr_matrix = np.corrcoef(cleanedData[["Energiebeschaffung, ct/KWh", "Endverbraucherpreis,  ct/KWh"]])
-# smg.plot_corr(corr_matrix, xnames=cleanedData["Endverbraucherpreis,  ct/KWh"], ynames=cleanedData["Energiebeschaffung, ct/KWh"])
-# plt.show()
-# print(corr_matrix)
+newVal = extrapolate(cleanedData, cleanedData["Vertrieb und Marge, ct/KWh"], 2)
+df["Vertrieb und Marge, ct/KWh"][13] = round(newVal[1], 2)
 
-plt.plot(cleanedData.index, cleanedData["Energiebeschaffung, ct/KWh"], label='Energiebeschaffung')
-plt.plot(cleanedData.index, cleanedData["Steuern und Abgaben, ct/KWh"], label='Steuern und Abgaben')
-plt.plot(cleanedData.index, cleanedData["Netzentgelt,  ct/KWh"], label='Netzentgelt')
-plt.plot(cleanedData.index, cleanedData["Vertrieb und Marge, ct/KWh"], label='Vertrieb und Marge')
-plt.plot(cleanedData.index, cleanedData["Endverbraucherpreis,  ct/KWh"], label='Endverbraucherpreis')
-plt.subplots_adjust(right=0.77)
-plt.title('Halbjährliche Daten zu Gaspreisen in Deutschland')
-plt.grid(True)
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-plt.show()
+print(df["Vertrieb und Marge, ct/KWh"])
+print(df)
+
+#calculate Endverbraucherpreis
+df["Endverbraucherpreis,  ct/KWh"][13] = df['Energiebeschaffung, ct/KWh'][13] + df['Steuern und Abgaben, ct/KWh'][13] + \
+                                        df["Netzentgelt,  ct/KWh"][13] + df["Vertrieb und Marge, ct/KWh"][13]
+
+print(df)
+plot(df)
+df.to_csv('Cleaned Gas Data.csv')
+print('Ende')
