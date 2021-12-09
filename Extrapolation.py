@@ -1,46 +1,37 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import timedelta
 import matplotlib.dates as mdates
 import pandas as pd
 
 
-def get_future_date(base_date):
-    future_date = base_date + timedelta(weeks=216)
-    return future_date
-
-
 def extrapolate(cleanedData, y_data, degree, timedata):
     data = [0, 1, 2, 3]
-    newVal = pd.DataFrame
 
-    dates = cleanedData.index
-
-    polynomial_coefficients = np.polyfit(mdates.date2num(dates), y_data, degree)
+    polynomial_coefficients = np.polyfit(mdates.date2num(cleanedData.index), y_data, degree)
     f = np.poly1d(polynomial_coefficients)
 
-    fig, cx = plt.subplots()
-    prediction_date = mdates.date2num(get_future_date(dates[-1]))
-    difference = prediction_date - mdates.date2num(dates.max())
-
-    x = np.linspace(mdates.date2num(dates.min()), mdates.date2num(dates.max()) + difference)
-    datetime_dates = mdates.num2date(x)
-
-    cx.plot(dates, y_data, '.k')
-    cx.plot(datetime_dates, f(x), '-g')
-    cx.grid()
-    # plt.show()
     for i in range(len(timedata)):
         data[i] = f(timedata[i])
 
     df = pd.Series(data)
     return df
 
+
 def predict(df, cleanedData):
     for column in df:
-        newVal = extrapolate(cleanedData, cleanedData[column], 3, [19173, 19356, 19538, 19721])
+        if column=="Vertrieb und Marge, ct/KWh":
+            newVal = extrapolate(cleanedData, cleanedData[column], 2, [19173, 19356, 19538, 19721])
+        else:
+            newVal = extrapolate(cleanedData, cleanedData[column], 3, [19173, 19356, 19538, 19721])
         for i in range(4):
             df[column][14 + i] = round(newVal[i], 2)
+
+
+def calculateValues(df):
+    for i in range(4):
+        df["Steuern und Abgaben, ct/KWh"][14 + i] = round((df["Energiebeschaffung, ct/KWh"][14 + i] + df["Netzentgelt,  ct/KWh"][14 + i]+0.55+0.75)*0.19+0.55+0.75, 2)
+        df["Endverbraucherpreis,  ct/KWh"][14 + i] = round(df['Energiebeschaffung, ct/KWh'][14 + i] + df['Steuern und Abgaben, ct/KWh'][14 + i] + \
+                                                     df["Netzentgelt,  ct/KWh"][14 + i] + df["Vertrieb und Marge, ct/KWh"][14 + i], 2)
 
 
 def plot(df):
